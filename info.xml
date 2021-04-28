@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<extension key="osmf-verify-contributor" type="module">
+  <file>osmf_verify_contributor</file>
+  <name>OSM Contributor Verification</name>
+  <description>
+    Custom tools for join.osmfoundation.org related to membership sign-up.
+  </description>
+  <license>AGPL-3.0</license>
+  <authors>
+    <author>
+      <name>Noah Miller, Lemniscus</name>
+      <email>nm@lemnisc.us</email>
+      <homepage>https://lemnisc.us</homepage>
+      <role>Author</role>
+    </author>
+  </authors>
+  <urls>
+    <url desc="Main Extension Page">https://github.com/lemniscus/osmf-verify-contributor</url>
+    <url desc="Documentation">https://github.com/lemniscus/osmf-verify-contributor</url>
+    <url desc="Support">https://github.com/lemniscus/osmf-verify-contributor/issues</url>
+    <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
+  </urls>
+  <releaseDate>2021-04-27</releaseDate>
+  <version>1.0</version>
+  <develStage>alpha</develStage>
+  <compatibility>
+    <ver>5.36</ver>
+  </compatibility>
+  <requires>
+    <ext>oauth-client</ext>
+  </requires>
+  <comments>Allows people to verify their OpenStreetMap username through OAuth; verifies that map contributions meet
+    the requirements for fee-waiver memberships and makes those memberships "pending" until then. Custom extension for
+    join.osmfoundation.org.
+  </comments>
+  <classloader>
+    <psr4 prefix="Civi\" path="Civi"/>
+  </classloader>
+  <civix>
+    <namespace>CRM/OsmfVerifyContributor</namespace>
+  </civix>
+</extension>
