@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/osm-username-verification-success</path>
+    <page_callback>CRM_OsmfVerifyContributor_Page_UsernameVerificationResult</page_callback>
+    <title>Username verification result</title>
+    <access_arguments>create OAuth tokens via auth code flow</access_arguments>
+  </item>
+</menu>

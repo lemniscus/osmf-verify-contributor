@@ -5,6 +5,139 @@ require_once 'osmf_verify_contributor.civix.php';
 use CRM_OsmfVerifyContributor_ExtensionUtil as E;
 // phpcs:enable
 
+function osmf_verify_contributor_civicrm_oauthProviders(&$providers) {
+  $providers['openstreetmap.org'] = [
+    'name' => 'openstreetmap.org',
+    'title' => 'OpenStreetMap',
+    'class' => 'Civi\OAuth\Provider\OpenStreetMapProvider',
+    'options' => [
+      'urlAuthorize' => 'https://oauth2.apis.dev.openstreetmap.org/oauth2/authorize',
+      'urlAccessToken' => 'https://oauth2.apis.dev.openstreetmap.org/oauth2/token',
+      'urlResourceOwnerDetails' => 'https://oauth2.apis.dev.openstreetmap.org/api/0.6/user/details.json',
+      'scopes' => ['read_prefs'],
+    ],
+  ];
+}
+
+function osmf_verify_contributor_register_tokens(Civi\Token\Event\TokenRegisterEvent $e) {
+  $e->entity('oauth')
+    ->register('authCodeUrl', ts('OAuth Authorization Code URL'));
+}
+
+function osmf_verify_contributor_evaluate_tokens(Civi\Token\Event\TokenValueEvent $e) {
+  /** @var Civi\Token\TokenRow $row */
+  try {
+    foreach ($e->getRows() as $row) {
+      $url = Civi\Api4\OAuthClient::authorizationCode(0)
+        ->addWhere('provider', '=', 'openstreetmap.org')
+        ->setLandingUrl(CRM_Utils_System::url(
+          'civicrm/osm-username-verification-success',
+          NULL,
+          TRUE
+        ))
+        ->setStorage('OAuthContactToken')
+        ->setTag('linkContact:' . $row->context['contact_id'])
+        ->execute()->single()['url'];
+      $row->tokens('oauth', 'authCodeUrl', $url);
+    }
+  }
+  catch (Exception $e) {
+    Civi::log($e->getMessage());
+  }
+}
+
+function osmf_verify_contributor_civicrm_preProcess(string $formName, CRM_Core_Form &$form) {
+  if ($formName === 'CRM_Contribute_Form_Contribution_Main') {
+    $form->setVar('_paymentProcessors', (array) $form->getVar('_paymentProcessors'));
+  }
+
+  if ($formName !== 'CRM_Contribute_Form_Contribution_ThankYou') {
+    return;
+  }
+
+  /** @var CRM_Contribute_Form_Contribution_ThankYou $form */
+
+  Civi::dispatcher()->addListener('civi.token.list', 'osmf_verify_contributor_register_tokens');
+  Civi::dispatcher()->addListener('civi.token.eval', 'osmf_verify_contributor_evaluate_tokens');
+
+  $tokenProcessor = new \Civi\Token\TokenProcessor(\Civi::dispatcher(), [
+    'controller' => $formName,
+    'smarty' => FALSE,
+  ]);
+  $tokenProcessor->addMessage(
+    'thankyou_text',
+    $form->_values['thankyou_text'],
+    'text/plain'
+  );
+
+  $tokenProcessor->addRow()
+    ->context('contact_id', $form->get('contactID'));
+  $tokenRow = $tokenProcessor->evaluate()->getRow(0);
+  $form->assign('thankyou_text', $tokenRow->render('thankyou_text'));
+
+  CRM_Core_Resources::singleton()->addStyle('
+    .crm-contribution-thankyou-form-block > * {
+      display: none;
+    }
+    #thankyou_text {
+      display: block;
+    }
+  ');
+}
+
+function osmf_verify_contributor_civicrm_oauthReturn($tokenRecord, &$nextUrl) {
+  $name = $tokenRecord['resource_owner_name'];
+  \Civi\Api4\Contact::update(FALSE)
+    ->addWhere('id', '=', $tokenRecord['contact_id'])
+    ->addValue('constituent_information.Verified_OpenStreetMap_Username', $name)
+    ->execute();
+  CRM_Core_Session::singleton()->set('osm_username', $name);
+  $nextUrl = CRM_Utils_System::url('civicrm/osm-username-verification-success');
+}
+
+function osmf_verify_contributor_civicrm_pre($op, $objectName, $id, &$params) {
+  if ($objectName !== 'Membership' || empty($params['membership_type_id'])) {
+    return;
+  }
+
+  $membershipType = CRM_Core_Pseudoconstant::getName(
+    'CRM_Member_BAO_Membership',
+    'membership_type_id',
+    $params['membership_type_id']
+  );
+  if ($membershipType !== 'Fee-waiver Member') {
+    return;
+  }
+
+  $contributionPageId = $params['contribution']->contribution_page_id ?? NULL;
+  static $targetContactId = NULL;
+  if (
+    ($op === 'create' && !empty($contributionPageId))
+    ||
+    ($op === 'edit' && !empty($params['contact_id']) && $params['contact_id'] === $targetContactId)
+  ) {
+    $params['status_id'] = CRM_Core_Pseudoconstant::getKey('CRM_Member_BAO_Membership',
+      'status_id', 'Pending');
+    $params['is_override'] = TRUE;
+    $params['start_date'] = $params['end_date'] = NULL;
+    $targetContactId = $params['contact_id'];
+  }
+}
+
+/**
+ * @param string $op
+ * @param string $objectName
+ * @param int $objectId
+ * @param CRM_Core_DAO $objectRef
+ */
+function osmf_verify_contributor_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+  if ($objectName === 'OAuthContactToken') {
+    if ($objectRef->contact_id) {
+      Civi\Osmf\VerifyMapper::verifyAndUpdateMembership($objectRef);
+    }
+  }
+}
+
 /**
  * Implements hook_civicrm_config().
  *
@@ -90,19 +223,6 @@ function osmf_verify_contributor_civicrm_managed(&$entities) {
 }
 
 /**
- * Implements hook_civicrm_caseTypes().
- *
- * Generate a list of case-types.
- *
- * Note: This hook only runs in CiviCRM 4.4+.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_caseTypes
- */
-function osmf_verify_contributor_civicrm_caseTypes(&$caseTypes) {
-  _osmf_verify_contributor_civix_civicrm_caseTypes($caseTypes);
-}
-
-/**
  * Implements hook_civicrm_angularModules().
  *
  * Generate a list of Angular modules.
@@ -135,38 +255,3 @@ function osmf_verify_contributor_civicrm_alterSettingsFolders(&$metaDataFolders 
 function osmf_verify_contributor_civicrm_entityTypes(&$entityTypes) {
   _osmf_verify_contributor_civix_civicrm_entityTypes($entityTypes);
 }
-
-/**
- * Implements hook_civicrm_themes().
- */
-function osmf_verify_contributor_civicrm_themes(&$themes) {
-  _osmf_verify_contributor_civix_civicrm_themes($themes);
-}
-
-// --- Functions below this ship commented out. Uncomment as required. ---
-
-/**
- * Implements hook_civicrm_preProcess().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_preProcess
- */
-//function osmf_verify_contributor_civicrm_preProcess($formName, &$form) {
-//
-//}
-
-/**
- * Implements hook_civicrm_navigationMenu().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_navigationMenu
- */
-//function osmf_verify_contributor_civicrm_navigationMenu(&$menu) {
-//  _osmf_verify_contributor_civix_insert_navigation_menu($menu, 'Mailings', array(
-//    'label' => E::ts('New subliminal message'),
-//    'name' => 'mailing_subliminal_message',
-//    'url' => 'civicrm/mailing/subliminal',
-//    'permission' => 'access CiviMail',
-//    'operator' => 'OR',
-//    'separator' => 0,
-//  ));
-//  _osmf_verify_contributor_civix_navigationMenu($menu);
-//}
