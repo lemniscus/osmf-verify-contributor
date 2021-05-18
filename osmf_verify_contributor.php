@@ -91,7 +91,7 @@ function osmf_verify_contributor_civicrm_oauthReturn($tokenRecord, &$nextUrl) {
     ->addWhere('id', '=', $tokenRecord['contact_id'])
     ->addValue('constituent_information.Verified_OpenStreetMap_Username', $name)
     ->execute();
-  CRM_Core_Session::singleton()->set('osm_username', $name);
+  CRM_Core_Session::singleton()->set('osm_username', $name, 'osmfvc');
   $nextUrl = CRM_Utils_System::url('civicrm/osm-username-verification-success');
 }
 
@@ -122,6 +122,14 @@ function osmf_verify_contributor_civicrm_pre($op, $objectName, $id, &$params) {
     $params['start_date'] = $params['end_date'] = NULL;
     $targetContactId = $params['contact_id'];
   }
+
+  CRM_Core_Session::singleton()->set(
+    'membership_status',
+    CRM_Core_Pseudoconstant::getLabel(
+      'CRM_Member_BAO_Membership',
+      'status_id',
+      $params['status_id']),
+    'osmfvc');
 }
 
 /**

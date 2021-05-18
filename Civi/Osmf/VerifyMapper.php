@@ -23,7 +23,7 @@ class VerifyMapper {
     try {
       $userMappingDays = self::userMappingDays($token);
 
-      if ($userMappingDays >= 40) {
+      if ($userMappingDays >= 42) {
         $membership = array_pop($memberships['values']);
         civicrm_api3('Membership', 'create', [
           'id' => $membership['id'],

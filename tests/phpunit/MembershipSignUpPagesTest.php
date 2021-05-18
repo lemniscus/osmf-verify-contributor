@@ -344,7 +344,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       ]);
   }
 
-  public function submitContributionPage($contributionPage): void {
+  private function submitContributionPage($contributionPage): void {
     $_REQUEST = $_POST = [
       'id' => $contributionPage['id'],
       'entryURL' => 'http://cmaster.localhost/civicrm/contribute/transact/?reset=1&amp;id=2',
