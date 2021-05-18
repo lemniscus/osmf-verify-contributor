@@ -32,7 +32,7 @@ class VerifyMapper {
         ]);
       }
 
-      \Civi\Api4\Note::create()
+      \Civi\Api4\Note::create(FALSE)
         ->addValue('entity_table', 'civicrm_contact')
         ->addValue('entity_id', $token->contact_id)
         ->addValue('note', E::ts('OpenStreetMap user %1 created '
@@ -45,10 +45,13 @@ class VerifyMapper {
         ->execute();
     }
     catch (\CRM_Core_Exception $e) {
-      // oh well.
+      \Civi::log()->error($e->getMessage(), [$e]);
     }
   }
 
+  /**
+   * @throws \CRM_Core_Exception
+   */
   private static function userMappingDays(ContactToken $token): int {
     if (!($username = $token->resource_owner_name)) {
       throw new \CRM_Core_Exception("Can't look up user mapping days without a username");

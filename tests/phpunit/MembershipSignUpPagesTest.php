@@ -12,7 +12,9 @@ use Civi\Test\TransactionalInterface;
  * @group headless
  */
 class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
-  HeadlessInterface, HookInterface, TransactionalInterface {
+    HeadlessInterface,
+    HookInterface,
+    TransactionalInterface {
 
   /**
    * @var array
@@ -20,8 +22,6 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   private $originalRequest;
 
   private $originalPost;
-
-  private $providers;
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
@@ -33,6 +33,11 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     parent::setUp();
     $this->originalRequest = $_REQUEST;
     $this->originalPost = $_POST;
+    CRM_Core_Config::singleton()->userPermissionClass->permissions = [
+      'profile create',
+      'make online contributions',
+    ];
+    self::assertNull(\CRM_Core_Session::singleton()->getLoggedInContactID());
   }
 
   public function tearDown(): void {
