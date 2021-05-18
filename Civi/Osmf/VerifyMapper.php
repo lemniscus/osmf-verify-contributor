@@ -35,13 +35,15 @@ class VerifyMapper {
       \Civi\Api4\Note::create(FALSE)
         ->addValue('entity_table', 'civicrm_contact')
         ->addValue('entity_id', $token->contact_id)
-        ->addValue('note', E::ts('OpenStreetMap user %1 created '
-          . 'changesets on %2 days out of the past 365 days.',
+        ->addValue('note', E::ts('In the past 365 days, OSM user '
+          . '%1 created changesets on %2 days.',
           [
             1 => $token->resource_owner_name,
             2 => $userMappingDays,
           ]))
-        ->addValue('subject', "Mapping days: $userMappingDays")
+        ->addValue(
+          'subject',
+          E::ts("Mapping days: %1", [1 => $userMappingDays]))
         ->execute();
     }
     catch (\CRM_Core_Exception $e) {
