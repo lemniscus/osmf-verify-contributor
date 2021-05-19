@@ -10,6 +10,7 @@ class VerifyMapper {
 
   public static function verifyAndUpdateMembership(ContactToken $token) {
     $name = $token->resource_owner_name ?? NULL;
+    \CRM_Core_Session::singleton()->set('osm_username', $name, 'osmfvc');
     $osmId = json_decode($token->resource_owner ?? '')->id ?? NULL;
     if (empty($name) || empty($osmId)) {
       \Civi::log()->error('Contact token is missing resource owner information');
