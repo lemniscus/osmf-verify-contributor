@@ -502,6 +502,8 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
         ->execute()->last();
 
       self::assertEquals('New', $statuses[$membership['status_id']]);
+      self::assertEquals('New', CRM_Core_Session::singleton()
+        ->get('membership_status', 'osmfvc'));
       self::assertContains(' 111', $note['subject']);
       self::assertContains(' 111 ', $note['note']);
     }
@@ -530,7 +532,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       self::assertEquals('Pending', $statuses[$membership['status_id']]);
 
       Civi::$statics['osmf-verify-contributor']['http-client'] =
-        $this->makeDummyHttpClientThatGets39OsmChangeSets();
+        $this->makeDummyHttpClientThatGets39DaysOfOsmChangeSets();
 
       Civi\Api4\OAuthContactToken::create(FALSE)
         ->setValues([
@@ -555,6 +557,8 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
         ->execute()->last();
 
       self::assertEquals('Pending', $statuses[$membership['status_id']]);
+      self::assertEquals('Pending', CRM_Core_Session::singleton()
+        ->get('membership_status', 'osmfvc'));
       self::assertContains(' 39', $note['subject']);
       self::assertContains(' 39 ', $note['note']);
     }

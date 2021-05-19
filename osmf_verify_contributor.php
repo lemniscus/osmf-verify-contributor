@@ -122,14 +122,6 @@ function osmf_verify_contributor_civicrm_pre($op, $objectName, $id, &$params) {
     $params['start_date'] = $params['end_date'] = NULL;
     $targetContactId = $params['contact_id'];
   }
-
-  CRM_Core_Session::singleton()->set(
-    'membership_status',
-    CRM_Core_Pseudoconstant::getLabel(
-      'CRM_Member_BAO_Membership',
-      'status_id',
-      $params['status_id']),
-    'osmfvc');
 }
 
 /**
@@ -140,9 +132,20 @@ function osmf_verify_contributor_civicrm_pre($op, $objectName, $id, &$params) {
  */
 function osmf_verify_contributor_civicrm_post($op, $objectName, $objectId, &$objectRef) {
   if ($objectName === 'OAuthContactToken') {
+    /** @var CRM_OAuth_DAO_OAuthContactToken $objectRef */
     if ($objectRef->contact_id) {
       Civi\Osmf\VerifyMapper::verifyAndUpdateMembership($objectRef);
     }
+  }
+  elseif ($objectName === 'Membership' && isset($objectRef->status_id)) {
+    CRM_Core_Session::singleton()->set(
+      'membership_status',
+      CRM_Core_Pseudoconstant::getLabel(
+        'CRM_Member_BAO_Membership',
+        'status_id',
+        $objectRef->status_id
+      ),
+      'osmfvc');
   }
 }
 
