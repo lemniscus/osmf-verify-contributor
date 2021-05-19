@@ -286,25 +286,27 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     return $contributionPage;
   }
 
-  private function makeChangeSetsXml($start, $stop): string {
+  private function makeChangeSetsXml($startDay, $howMany): string {
     $changeSetsXml[] = '<?xml version="1.0" encoding="UTF-8"?>';
     $changeSetsXml[] = '<osm version="0.6" generator="OpenStreetMap server" copyright="OpenStreetMap and contributors" attribution="http://www.openstreetmap.org/copyright" license="http://opendatacommons.org/licenses/odbl/1-0/">';
-    for ($i = $start; $i <= $stop; $i++) {
-      $d1 = new DateTime("-$i days");
+    $days = [];
+    for ($hr = $startDay * 24; count($days) < $howMany; $hr = $hr + 16) {
+      $d1 = new DateTime("-$hr hours", new DateTimeZone('Etc/UTC'));
       $d2 = $d1->add(new DateInterval('PT30M'));
-      $changeSetsXml[] = "<changeset id=\"$i\""
-        . ' created_at="' . $d1->format("Y-m-dTH:i:s") . 'Z" open="false"'
+      $changeSetsXml[] = "<changeset id=\"$hr\""
+        . ' created_at="' . $d1->format("Y-m-d\TH:i:s") . 'Z" open="false"'
         . ' comments_count="0" changes_count="8"'
-        . ' closed_at="' . $d2->format("Y-m-dTH:i:s") . 'Z"'
+        . ' closed_at="' . $d2->format("Y-m-d\TH:i:s") . 'Z"'
         . ' min_lat="47.1885649" min_lon="8.4652215" max_lat="47.2047274" max_lon="8.4704262" uid="1" user="foo">';
       $changeSetsXml[] = '<tag k="source" v="local knowledge"/>';
       $changeSetsXml[] = '</changeset>';
+      $days[$d1->format('Ymd')] = 1;
     }
     $changeSetsXml[] = '</osm>';
     return implode("\n", $changeSetsXml);
   }
 
-  private function makeDummyHttpClientThatGets39OsmChangeSets(): \GuzzleHttp\Client {
+  private function makeDummyHttpClientThatGets39DaysOfOsmChangeSets(): \GuzzleHttp\Client {
     $osmChangesetsResponse1 = [
       'status' => 200,
       'headers' => ['Content-Type' => 'application/xml; charset=utf-8'],
@@ -324,7 +326,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       ]);
   }
 
-  private function makeDummyHttpClientThatGets111OsmChangeSets(): \GuzzleHttp\Client {
+  private function makeDummyHttpClientThatGets111DaysOfOsmChangeSets(): \GuzzleHttp\Client {
     $osmChangesetsResponse1 = [
       'status' => 200,
       'headers' => ['Content-Type' => 'application/xml; charset=utf-8'],
@@ -334,7 +336,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     $osmChangesetsResponse2 = [
       'status' => 200,
       'headers' => ['Content-Type' => 'application/xml; charset=utf-8'],
-      'body' => $this->makeChangeSetsXml(101, 111),
+      'body' => $this->makeChangeSetsXml(222, 11),
     ];
 
     return DummyOpenStreetMapProvider::createHttpClient(
@@ -475,7 +477,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       self::assertEquals('Pending', $statuses[$membership['status_id']]);
 
       Civi::$statics['osmf-verify-contributor']['http-client'] =
-        $this->makeDummyHttpClientThatGets111OsmChangeSets();
+        $this->makeDummyHttpClientThatGets111DaysOfOsmChangeSets();
 
       Civi\Api4\OAuthContactToken::create(FALSE)
         ->setValues([

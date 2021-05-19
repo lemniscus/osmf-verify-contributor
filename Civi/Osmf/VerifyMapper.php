@@ -94,7 +94,7 @@ class VerifyMapper {
       foreach ($changeSetBatch as $changeSet) {
         $created = new \DateTime($changeSet['created_at']);
         if ($created > $searchLowerLimit) {
-          $mappingDays[$created->format(DATE_ATOM)] = 1;
+          $mappingDays[$created->format('Ymd')] = 1;
           $earliestMappingDateTime = min($earliestMappingDateTime, $created);
         }
       }
