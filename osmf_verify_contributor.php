@@ -86,12 +86,6 @@ function osmf_verify_contributor_civicrm_preProcess(string $formName, CRM_Core_F
 }
 
 function osmf_verify_contributor_civicrm_oauthReturn($tokenRecord, &$nextUrl) {
-  $name = $tokenRecord['resource_owner_name'];
-  \Civi\Api4\Contact::update(FALSE)
-    ->addWhere('id', '=', $tokenRecord['contact_id'])
-    ->addValue('constituent_information.Verified_OpenStreetMap_Username', $name)
-    ->execute();
-  CRM_Core_Session::singleton()->set('osm_username', $name, 'osmfvc');
   $nextUrl = CRM_Utils_System::url('civicrm/osm-username-verification-success');
 }
 

@@ -23,7 +23,7 @@ class OpenStreetMapUser implements \League\OAuth2\Client\Provider\ResourceOwnerI
    * @inheritDoc
    */
   public function getId() {
-    return $this->getName();
+    return $this->response['id']();
   }
 
   /**

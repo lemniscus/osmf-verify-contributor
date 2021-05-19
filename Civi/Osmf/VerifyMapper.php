@@ -5,11 +5,41 @@ namespace Civi\Osmf;
 use CRM_OAuth_DAO_OAuthContactToken as ContactToken;
 use CRM_OsmfVerifyContributor_ExtensionUtil as E;
 use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Psr7\Request;
 
 class VerifyMapper {
 
   public static function verifyAndUpdateMembership(ContactToken $token) {
+    $name = $token->resource_owner_name ?? NULL;
+    $osmId = json_decode($token->resource_owner ?? '')->id ?? NULL;
+    if (empty($name) || empty($osmId)) {
+      \Civi::log()->error('Contact token is missing resource owner information');
+      return;
+    }
+
+    $duplicates = \Civi\Api4\Contact::get(FALSE)
+      ->addWhere(
+        'constituent_information.Verified_OpenStreetMap_User_ID',
+        '=',
+        $osmId)
+      ->selectRowCount()->execute()->rowCount;
+
+    if ($duplicates) {
+      $message = E::ts(
+        'There is already a record in this system linked to '
+        . 'the OpenStreetMap user "%1". Please contact membership@osmfoundation.org '
+        . 'to resolve this issue.',
+        [1 => $name]
+      );
+      \CRM_Core_Session::singleton()->set('error_message', $message, 'osmfvc');
+      return;
+    }
+    else {
+      \Civi\Api4\Contact::update(FALSE)
+        ->addWhere('id', '=', $token->contact_id)
+        ->addValue('constituent_information.Verified_OpenStreetMap_Username', $name)
+        ->addValue('constituent_information.Verified_OpenStreetMap_User_ID', $osmId)
+        ->execute();
+    }
 
     $memberships = civicrm_api3('Membership', 'get', [
       'contact_id' => $token->contact_id,

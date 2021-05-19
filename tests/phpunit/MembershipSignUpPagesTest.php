@@ -26,6 +26,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
       ->install(['oauth-client', 'osmf-verify-contributor'])
+      ->callback([__CLASS__, 'setUpCustomFields'])
       ->apply();
   }
 
@@ -33,6 +34,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     parent::setUp();
     $this->originalRequest = $_REQUEST;
     $this->originalPost = $_POST;
+
     CRM_Core_Config::singleton()->userPermissionClass->permissions = [
       'profile create',
       'make online contributions',
@@ -44,6 +46,67 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     parent::tearDown();
     $_REQUEST = $this->originalRequest;
     $_POST = $this->originalPost;
+  }
+
+  public static function setUpCustomFields(): void {
+    Civi\Api4\CustomGroup::delete(FALSE)
+      ->addWhere('name', '=', 'constituent_information')
+      ->execute();
+    Civi\Api4\CustomField::delete(FALSE)
+      ->addWhere('name', 'IN', [
+        'Verified_OpenStreetMap_User_ID',
+        'Verified_OpenStreetMap_User_ID',
+      ])->execute();
+    $customGroup = Civi\Api4\CustomGroup::create(FALSE)
+      ->setValues(
+        [
+          'name' => 'constituent_information',
+          'title' => 'Constituent Information',
+          'extends' => 'Individual',
+          'style' => 'Inline',
+          'collapse_display' => TRUE,
+          'help_pre' => 'Please enter additional constituent information as data becomes available for this contact.',
+          'weight' => 1,
+          'is_active' => TRUE,
+          'table_name' => 'civicrm_value_constituent_information_1',
+          'is_multiple' => FALSE,
+          'collapse_adv_display' => FALSE,
+          'is_reserved' => FALSE,
+          'is_public' => TRUE,
+        ]
+      )->execute()->single();
+    Civi\Api4\CustomField::create(FALSE)
+      ->setValues(
+        [
+          'custom_group_id' => $customGroup['id'],
+          'name' => 'Verified_OpenStreetMap_User_ID',
+          'label' => 'Verified OpenStreetMap User ID',
+          'data_type' => 'String',
+          'html_type' => 'Text',
+          'is_searchable' => TRUE,
+          'is_search_range' => FALSE,
+          'is_active' => TRUE,
+          'text_length' => 255,
+          'serialize' => 0,
+          'in_selector' => FALSE,
+        ]
+      )->execute();
+    Civi\Api4\CustomField::create(FALSE)
+      ->setValues(
+        [
+          'custom_group_id' => $customGroup['id'],
+          'name' => 'Verified_OpenStreetMap_Username',
+          'label' => 'Verified OpenStreetMap Username',
+          'data_type' => 'String',
+          'html_type' => 'Text',
+          'is_searchable' => TRUE,
+          'is_search_range' => FALSE,
+          'is_active' => TRUE,
+          'text_length' => 255,
+          'serialize' => 0,
+          'in_selector' => FALSE,
+        ]
+      )->execute();
   }
 
   private function makeOsmOAuthClient(): array {
@@ -70,6 +133,9 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   }
 
   private function makeMembershipSignupEntities(): array {
+    Civi\Api4\MembershipType::delete(FALSE)
+      ->addWhere('name', '=', 'Fee-waiver Member')
+      ->execute();
     $membershipType = Civi\Api4\MembershipType::create(FALSE)
       ->setValues(
         [
@@ -491,6 +557,9 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
           "token_type" => "Bearer",
           "access_token" => "example-access-token",
           "resource_owner_name" => "foobar",
+          "resource_owner" => [
+            'id' => '99',
+          ],
         ])->execute();
 
       $membership = civicrm_api3('Membership', 'getsingle', [
@@ -546,6 +615,9 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
           "token_type" => "Bearer",
           "access_token" => "example-access-token",
           "resource_owner_name" => "foobar",
+          "resource_owner" => [
+            'id' => '99',
+          ],
         ])->execute();
 
       $membership = civicrm_api3('Membership', 'getsingle', [

@@ -24,29 +24,32 @@ class OAuthTokenAquisitionTest extends \PHPUnit\Framework\TestCase implements He
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
       ->install(['oauth-client', 'osmf-verify-contributor'])
+      ->callback(function () {
+        Civi\Api4\MembershipType::create(FALSE)
+          ->setValues(
+            [
+              "domain_id" => 1,
+              "name" => "Fee-waiver Member",
+              "description" => "Fee-waiver members are members under the fee waiver program. They are like associate members. The fact that they are fee waiver members is private.",
+              "member_of_contact_id" => 1,
+              "financial_type_id:name" => "Member Dues",
+              "minimum_fee" => 0.0,
+              "duration_unit" => "year",
+              "duration_interval" => 1,
+              "period_type" => "rolling",
+              "visibility" => "Admin",
+              "auto_renew" => FALSE,
+              "is_active" => TRUE,
+            ]
+          )->execute();
+      })
+      ->callback(['MembershipSignUpPagesTest', 'setUpCustomFields'])
       ->apply();
   }
 
   public function setUp(): void {
     parent::setUp();
     $this->originalRequest = $_REQUEST;
-    Civi\Api4\MembershipType::create(FALSE)
-      ->setValues(
-        [
-          "domain_id" => 1,
-          "name" => "Fee-waiver Member",
-          "description" => "Fee-waiver members are members under the fee waiver program. They are like associate members. The fact that they are fee waiver members is private.",
-          "member_of_contact_id" => 1,
-          "financial_type_id:name" => "Member Dues",
-          "minimum_fee" => 0.0,
-          "duration_unit" => "year",
-          "duration_interval" => 1,
-          "period_type" => "rolling",
-          "visibility" => "Admin",
-          "auto_renew" => FALSE,
-          "is_active" => TRUE,
-        ]
-      )->execute()->single();
   }
 
   public function tearDown(): void {
