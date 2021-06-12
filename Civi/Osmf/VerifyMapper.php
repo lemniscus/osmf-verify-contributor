@@ -8,6 +8,15 @@ use GuzzleHttp\Exception\GuzzleException;
 
 class VerifyMapper {
 
+  public static function post($op, $objectName, $objectId, &$objectRef) {
+    if ($objectName === 'OAuthContactToken') {
+      /** @var \CRM_OAuth_DAO_OAuthContactToken $objectRef */
+      if ($objectRef->contact_id) {
+        static::verifyAndUpdateMembership($objectRef);
+      }
+    }
+  }
+
   public static function verifyAndUpdateMembership(ContactToken $token) {
     $name = $token->resource_owner_name ?? NULL;
     \CRM_Core_Session::singleton()->set('osm_username', $name, 'osmfvc');

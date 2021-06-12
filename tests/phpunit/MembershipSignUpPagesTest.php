@@ -7,7 +7,8 @@ use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
 
 /**
- * FIXME - Add test description.
+ * Test the custom processing that should take place during OSMF's
+ * membership signup flow.
  *
  * @group headless
  */

@@ -43,7 +43,7 @@ class OAuthTokenAquisitionTest extends \PHPUnit\Framework\TestCase implements He
             ]
           )->execute();
       })
-      ->callback(['MembershipSignUpPagesTest', 'setUpCustomFields'])
+      //->callback(['MembershipSignUpPagesTest', 'setUpCustomFields'])
       ->apply();
   }
 

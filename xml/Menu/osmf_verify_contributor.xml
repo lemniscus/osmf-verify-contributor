@@ -6,4 +6,10 @@
     <title>Username verification result</title>
     <access_arguments>create OAuth tokens via auth code flow</access_arguments>
   </item>
+  <item>
+    <path>civicrm/admin/contribute/osmfcontributionpagesettings</path>
+    <page_callback>CRM_OsmfVerifyContributor_Form_OsmfContributionPageSettings</page_callback>
+    <title>Osmf Contribution Page Settings</title>
+    <access_arguments>access CiviContribute</access_arguments>
+  </item>
 </menu>
