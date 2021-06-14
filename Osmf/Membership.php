@@ -1,8 +1,7 @@
 <?php
 
 
-namespace Civi\Osmf;
-
+namespace Osmf;
 
 use Civi\Core\Event\GenericHookEvent;
 

@@ -1,10 +1,11 @@
 <?php
 
-namespace Civi\Osmf;
+namespace Osmf;
 
 use CRM_OAuth_DAO_OAuthContactToken as ContactToken;
 use CRM_OsmfVerifyContributor_ExtensionUtil as E;
 use GuzzleHttp\Exception\GuzzleException;
+use function civicrm_api3;
 
 class VerifyMapper {
 

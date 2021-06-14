@@ -11,21 +11,21 @@ function osmf_verify_contributor_civicrm_config(&$config) {
   }
   Civi::$statics[__FUNCTION__] = 1;
 
-  Civi::dispatcher()->addListener('hook_civicrm_register_tokens', ['\Civi\Osmf\TemplateToken', 'register_tokens']);
-  Civi::dispatcher()->addListener('hook_civicrm_evaluate_tokens', ['\Civi\Osmf\TemplateToken', 'evaluate_tokens']);
+  Civi::dispatcher()->addListener('hook_civicrm_register_tokens', ['\Osmf\TemplateToken', 'register_tokens']);
+  Civi::dispatcher()->addListener('hook_civicrm_evaluate_tokens', ['\Osmf\TemplateToken', 'evaluate_tokens']);
 
-  Civi::dispatcher()->addListener('&hook_civicrm_tabset', ['\Civi\Osmf\ContributionPageSettings', 'tabset']);
+  Civi::dispatcher()->addListener('&hook_civicrm_tabset', ['\Osmf\ContributionPageSettings', 'tabset']);
 
-  Civi::dispatcher()->addListener('hook_civicrm_preProcess', ['\Civi\Osmf\ContributionPage', 'preProcess']);
-  Civi::dispatcher()->addListener('&hook_civicrm_alterTemplateFile', ['\Civi\Osmf\ContributionPage', 'alterTemplateFile']);
+  Civi::dispatcher()->addListener('hook_civicrm_preProcess', ['\Osmf\ContributionPage', 'preProcess']);
+  Civi::dispatcher()->addListener('&hook_civicrm_alterTemplateFile', ['\Osmf\ContributionPage', 'alterTemplateFile']);
 
-  Civi::dispatcher()->addListener('hook_civicrm_oauthProviders', ['\Civi\Osmf\OAuth', 'oauthProviders']);
-  Civi::dispatcher()->addListener('hook_civicrm_oauthReturn', ['\Civi\Osmf\OAuth', 'oauthReturn']);
+  Civi::dispatcher()->addListener('hook_civicrm_oauthProviders', ['\Osmf\OAuth', 'oauthProviders']);
+  Civi::dispatcher()->addListener('hook_civicrm_oauthReturn', ['\Osmf\OAuth', 'oauthReturn']);
 
-  Civi::dispatcher()->addListener('&hook_civicrm_pre', ['\Civi\Osmf\Membership', 'pre']);
-  Civi::dispatcher()->addListener('&hook_civicrm_post', ['\Civi\Osmf\Membership', 'post']);
+  Civi::dispatcher()->addListener('&hook_civicrm_pre', ['\Osmf\Membership', 'pre']);
+  Civi::dispatcher()->addListener('&hook_civicrm_post', ['\Osmf\Membership', 'post']);
 
-  Civi::dispatcher()->addListener('&hook_civicrm_post', ['\Civi\Osmf\VerifyMapper', 'post']);
+  Civi::dispatcher()->addListener('&hook_civicrm_post', ['\Osmf\VerifyMapper', 'post']);
   _osmf_verify_contributor_civix_civicrm_config($config);
 }
 

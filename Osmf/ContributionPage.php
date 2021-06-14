@@ -1,6 +1,6 @@
 <?php
 
-namespace Civi\Osmf;
+namespace Osmf;
 
 use CRM_OsmfVerifyContributor_ExtensionUtil as E;
 
@@ -21,11 +21,11 @@ class ContributionPage {
     \CRM_Contribute_Form_Contribution_ThankYou $form): void {
 
     \Civi::dispatcher()->addListener('civi.token.list', [
-      '\Civi\Osmf\TemplateToken',
+      '\Osmf\TemplateToken',
       'register_tokens',
     ]);
     \Civi::dispatcher()->addListener('civi.token.eval', [
-      '\Civi\Osmf\TemplateToken',
+      '\Osmf\TemplateToken',
       'evaluate_tokens',
     ]);
 

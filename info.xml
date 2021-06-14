@@ -35,6 +35,7 @@
   </comments>
   <classloader>
     <psr4 prefix="Civi\" path="Civi"/>
+    <psr4 prefix="Osmf\" path="Osmf"/>
   </classloader>
   <civix>
     <namespace>CRM/OsmfVerifyContributor</namespace>

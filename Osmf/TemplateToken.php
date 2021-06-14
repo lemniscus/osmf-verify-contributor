@@ -1,7 +1,9 @@
 <?php
 
 
-namespace Civi\Osmf;
+namespace Osmf;
+
+use function ts;
 
 class TemplateToken {
 

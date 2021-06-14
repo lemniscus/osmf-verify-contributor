@@ -1,7 +1,8 @@
 <?php
 
-namespace Civi\OAuth\Provider;
+namespace Osmf\Fixture;
 
+use Civi\OAuth\Provider\OpenStreetMapProvider;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;

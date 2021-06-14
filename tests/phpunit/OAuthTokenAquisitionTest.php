@@ -110,7 +110,7 @@ class OAuthTokenAquisitionTest extends \PHPUnit\Framework\TestCase implements He
     $this->providers['dummy-osm'] = [
       'name' => 'dummy-osm',
       'title' => 'Dummy Provider',
-      'class' => 'Civi\OAuth\Provider\DummyOpenStreetMapProvider',
+      'class' => 'Osmf\Fixture\DummyOpenStreetMapProvider',
       'options' => [
         'urlAuthorize' => 'https://dummy/authorize',
         'urlAccessToken' => 'https://dummy/token',

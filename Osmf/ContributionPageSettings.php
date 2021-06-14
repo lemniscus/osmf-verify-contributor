@@ -1,6 +1,6 @@
 <?php
 
-namespace Civi\Osmf;
+namespace Osmf;
 
 use CRM_OsmfVerifyContributor_ExtensionUtil as E;
 

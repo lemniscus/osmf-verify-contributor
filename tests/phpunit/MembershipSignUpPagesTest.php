@@ -1,6 +1,6 @@
 <?php
 
-use Civi\OAuth\Provider\DummyOpenStreetMapProvider;
+use Osmf\Fixture\DummyOpenStreetMapProvider;
 use CRM_OsmfVerifyContributor_ExtensionUtil as E;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
@@ -27,7 +27,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
       ->install(['oauth-client', 'osmf-verify-contributor'])
-      ->callback([__CLASS__, 'setUpCustomFields'])
+      ->callback(['\Osmf\Fixture\MembershipSignUp', 'setUpCustomFields'])
       ->apply();
   }
 
@@ -47,67 +47,6 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     parent::tearDown();
     $_REQUEST = $this->originalRequest;
     $_POST = $this->originalPost;
-  }
-
-  public static function setUpCustomFields(): void {
-    Civi\Api4\CustomGroup::delete(FALSE)
-      ->addWhere('name', '=', 'constituent_information')
-      ->execute();
-    Civi\Api4\CustomField::delete(FALSE)
-      ->addWhere('name', 'IN', [
-        'Verified_OpenStreetMap_User_ID',
-        'Verified_OpenStreetMap_User_ID',
-      ])->execute();
-    $customGroup = Civi\Api4\CustomGroup::create(FALSE)
-      ->setValues(
-        [
-          'name' => 'constituent_information',
-          'title' => 'Constituent Information',
-          'extends' => 'Individual',
-          'style' => 'Inline',
-          'collapse_display' => TRUE,
-          'help_pre' => 'Please enter additional constituent information as data becomes available for this contact.',
-          'weight' => 1,
-          'is_active' => TRUE,
-          'table_name' => 'civicrm_value_constituent_information_1',
-          'is_multiple' => FALSE,
-          'collapse_adv_display' => FALSE,
-          'is_reserved' => FALSE,
-          'is_public' => TRUE,
-        ]
-      )->execute()->single();
-    Civi\Api4\CustomField::create(FALSE)
-      ->setValues(
-        [
-          'custom_group_id' => $customGroup['id'],
-          'name' => 'Verified_OpenStreetMap_User_ID',
-          'label' => 'Verified OpenStreetMap User ID',
-          'data_type' => 'String',
-          'html_type' => 'Text',
-          'is_searchable' => TRUE,
-          'is_search_range' => FALSE,
-          'is_active' => TRUE,
-          'text_length' => 255,
-          'serialize' => 0,
-          'in_selector' => FALSE,
-        ]
-      )->execute();
-    Civi\Api4\CustomField::create(FALSE)
-      ->setValues(
-        [
-          'custom_group_id' => $customGroup['id'],
-          'name' => 'Verified_OpenStreetMap_Username',
-          'label' => 'Verified OpenStreetMap Username',
-          'data_type' => 'String',
-          'html_type' => 'Text',
-          'is_searchable' => TRUE,
-          'is_search_range' => FALSE,
-          'is_active' => TRUE,
-          'text_length' => 255,
-          'serialize' => 0,
-          'in_selector' => FALSE,
-        ]
-      )->execute();
   }
 
   private function makeOsmOAuthClient(): array {
@@ -131,226 +70,6 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
         ->addValue('invoice_id', 12345678)
         ->addValue('financial_type_id', 2))
       ->execute()->single();
-  }
-
-  private function makeMembershipSignupEntities(): array {
-    Civi\Api4\MembershipType::delete(FALSE)
-      ->addWhere('name', '=', 'Fee-waiver Member')
-      ->execute();
-    $membershipType = Civi\Api4\MembershipType::create(FALSE)
-      ->setValues(
-        [
-          "domain_id" => 1,
-          "name" => "Fee-waiver Member",
-          "description" => "Fee-waiver members are members under the fee waiver program. They are like associate members. The fact that they are fee waiver members is private.",
-          "member_of_contact_id" => 1,
-          "financial_type_id:name" => "Member Dues",
-          "minimum_fee" => 0.0,
-          "duration_unit" => "year",
-          "duration_interval" => 1,
-          "period_type" => "rolling",
-          "visibility" => "Admin",
-          "auto_renew" => FALSE,
-          "is_active" => TRUE,
-        ]
-      )->execute()->single();
-
-    $priceField = Civi\Api4\PriceField::update(FALSE)
-      ->addWhere('price_set_id:name', '=', 'default_membership_type_amount')
-      ->addValue('name', 'membership_amount')
-      ->addValue('is_required', '1')
-      ->execute()->single();
-
-    $priceField = Civi\Api4\PriceField::get(FALSE)
-      ->addWhere('price_set_id:name', '=', 'default_membership_type_amount')
-      ->execute()->single();
-
-    $priceFieldValue = Civi\Api4\PriceFieldValue::update(FALSE)
-      ->addWhere('price_field_id', '=', $priceField['id'])
-      ->addWhere('membership_type_id', '=', $membershipType['id'])
-      ->addValue('price_field_id', $priceField['id'])
-      // needed due to bug in \CRM_Price_BAO_PriceFieldValue::add
-      ->addValue('is_default', '1')
-      ->execute()->single();
-
-    $contributionPage = \Civi\Api4\ContributionPage::create(FALSE)
-      ->setValues(
-        [
-          "title" => "Member Signup and Renewal",
-          "financial_type_id:name" => "Member Dues",
-          "is_credit_card_only" => FALSE,
-          "is_monetary" => FALSE,
-          "is_recur" => FALSE,
-          "is_confirm_enabled" => FALSE,
-          "is_recur_interval" => FALSE,
-          "is_recur_installments" => FALSE,
-          "adjust_recur_start_date" => FALSE,
-          "is_pay_later" => FALSE,
-          "is_partial_payment" => FALSE,
-          "is_allow_other_amount" => FALSE,
-          "thankyou_title" => "Almost finished",
-          "thankyou_text" => "{oauth.authCodeUrl}",
-          "is_email_receipt" => FALSE,
-          "is_active" => TRUE,
-          "amount_block_is_active" => FALSE,
-          "is_share" => FALSE,
-          "is_billing_required" => FALSE,
-        ]
-      )
-      ->execute()->single();
-
-    CRM_Price_BAO_PriceSet::addTo(
-      'civicrm_contribution_page',
-      $contributionPage['id'],
-      $priceField['price_set_id']
-    );
-    $contributionPage['priceSetId'] = $priceField['price_set_id'];
-    $contributionPage['priceFieldId'] = $priceField['id'];
-    $contributionPage['priceFieldValueId'] = $priceFieldValue['id'];
-
-    $membershipBlock = civicrm_api3('MembershipBlock', 'create', [
-      'entity_id' => $contributionPage['id'],
-      'entity_table' => "civicrm_contribution_page",
-      'membership_types' => serialize([$membershipType['id'] => NULL]),
-      'membership_type_default' => $membershipType['id'],
-      'display_min_fee' => 0,
-      'is_separate_payment' => 0,
-      'is_required' => 1,
-      'is_active' => 1,
-    ]);
-
-    $ufGroup = \Civi\Api4\UFGroup::create(FALSE)
-      ->setValues([
-        "is_active" => TRUE,
-        "group_type" => [
-          "Individual",
-          "Contact",
-        ],
-        "title" => "New Individual",
-        "frontend_title" => NULL,
-        "description" => NULL,
-        "help_pre" => NULL,
-        "help_post" => NULL,
-        "limit_listings_group_id" => NULL,
-        "post_URL" => NULL,
-        "add_to_group_id" => NULL,
-        "add_captcha" => FALSE,
-        "is_map" => FALSE,
-        "is_edit_link" => FALSE,
-        "is_uf_link" => FALSE,
-        "is_update_dupe" => FALSE,
-        "cancel_URL" => NULL,
-        "is_cms_user" => FALSE,
-        "notify" => NULL,
-        "is_reserved" => TRUE,
-        "name" => "new_individual_tessssssst",
-        "created_id" => NULL,
-        "created_date" => NULL,
-        "is_proximity_search" => FALSE,
-        "cancel_button_text" => NULL,
-        "submit_button_text" => NULL,
-        "add_cancel_button" => TRUE,
-      ])
-      ->execute()->single();
-
-    $ufFieldParams = [
-      [
-        "uf_group_id" => $ufGroup['id'],
-        "field_name" => "first_name",
-        "is_active" => TRUE,
-        "is_view" => FALSE,
-        "is_required" => TRUE,
-        "weight" => 1,
-        "help_post" => NULL,
-        "help_pre" => NULL,
-        "visibility" => "User and User Admin Only",
-        "in_selector" => FALSE,
-        "is_searchable" => FALSE,
-        "location_type_id" => NULL,
-        "phone_type_id" => NULL,
-        "website_type_id" => NULL,
-        "label" => "First Name",
-        "field_type" => "Individual",
-        "is_reserved" => FALSE,
-        "is_multi_summary" => FALSE,
-      ],
-      [
-        "uf_group_id" => $ufGroup['id'],
-        "field_name" => "last_name",
-        "is_active" => TRUE,
-        "is_view" => FALSE,
-        "is_required" => TRUE,
-        "weight" => 2,
-        "help_post" => NULL,
-        "help_pre" => NULL,
-        "visibility" => "User and User Admin Only",
-        "in_selector" => FALSE,
-        "is_searchable" => FALSE,
-        "location_type_id" => NULL,
-        "phone_type_id" => NULL,
-        "website_type_id" => NULL,
-        "label" => "Last Name",
-        "field_type" => "Individual",
-        "is_reserved" => FALSE,
-        "is_multi_summary" => FALSE,
-      ],
-      [
-        "uf_group_id" => $ufGroup['id'],
-        "field_name" => "email",
-        "is_active" => TRUE,
-        "is_view" => FALSE,
-        "is_required" => FALSE,
-        "weight" => 4,
-        "help_post" => NULL,
-        "help_pre" => NULL,
-        "visibility" => "User and User Admin Only",
-        "in_selector" => FALSE,
-        "is_searchable" => FALSE,
-        "location_type_id" => NULL,
-        "phone_type_id" => NULL,
-        "website_type_id" => NULL,
-        "label" => "Email Address",
-        "field_type" => "Contact",
-        "is_reserved" => FALSE,
-        "is_multi_summary" => FALSE,
-      ],
-      [
-        "uf_group_id" => $ufGroup['id'],
-        "field_name" => "country",
-        "is_active" => TRUE,
-        "is_view" => FALSE,
-        "is_required" => FALSE,
-        "weight" => 3,
-        "help_post" => NULL,
-        "help_pre" => NULL,
-        "visibility" => "User and User Admin Only",
-        "in_selector" => FALSE,
-        "is_searchable" => FALSE,
-        "location_type_id" => NULL,
-        "phone_type_id" => NULL,
-        "website_type_id" => NULL,
-        "label" => "Country",
-        "field_type" => "Contact",
-        "is_reserved" => NULL,
-        "is_multi_summary" => FALSE,
-      ],
-    ];
-    foreach ($ufFieldParams as $ps) {
-      \Civi\Api4\UFField::create(FALSE)->setValues($ps)->execute();
-    }
-
-    \Civi\Api4\UFJoin::create(FALSE)
-      ->setValues([
-        "is_active" => TRUE,
-        "module" => "CiviContribute",
-        "entity_table" => "civicrm_contribution_page",
-        "entity_id" => $contributionPage['id'],
-        "weight" => 1,
-        "uf_group_id" => $ufGroup['id'],
-        "module_data" => NULL,
-      ])->execute();
-
-    return $contributionPage;
   }
 
   private function makeChangeSetsXml($startDay, $howMany): string {
@@ -435,7 +154,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   public function testUrlToken() {
     $oauthClient = $this->makeOsmOAuthClient();
 
-    $cPage = $this->makeMembershipSignupEntities();
+    $cPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
     $c = $this->makeContactWithContribution();
 
     $form = new CRM_Contribute_Form_Contribution_ThankYou();
@@ -468,7 +187,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function testMembershipStartsOutPending() {
-    $contributionPage = $this->makeMembershipSignupEntities();
+    $contributionPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
 
     try {
       $this->submitContributionPage($contributionPage);
@@ -497,7 +216,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function testMembershipStaysPendingUntilVerified() {
-    $contributionPage = $this->makeMembershipSignupEntities();
+    $contributionPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
 
     try {
       $this->submitContributionPage($contributionPage);
@@ -522,7 +241,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function testPassVerificationAndActivate() {
-    $contributionPage = $this->makeMembershipSignupEntities();
+    $contributionPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
 
     try {
       $this->submitContributionPage($contributionPage);
@@ -580,7 +299,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function testFailVerification() {
-    $contributionPage = $this->makeMembershipSignupEntities();
+    $contributionPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
 
     try {
       $this->submitContributionPage($contributionPage);
