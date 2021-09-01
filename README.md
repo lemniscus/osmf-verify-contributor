@@ -1,44 +1,97 @@
 # osmf-verify-contributor
 
-![Screenshot](/images/screenshot.png)
-
-(*FIXME: In one or two paragraphs, describe what the extension does and why one would download it. *)
+This custom extension, written specifically for OpenStreetMap Foundation's
+membership site, provides tools to verify a person's OSM mapping contributions
+when they sign up for a membership, and to modify the membership status
+depending on those contributions.
 
 The extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## Requirements
 
 * PHP v7.2+
-* CiviCRM (*FIXME: Version number*)
-
-## Installation (Web UI)
-
-Learn more about installing CiviCRM extensions in the [CiviCRM Sysadmin Guide](https://docs.civicrm.org/sysadmin/en/latest/customize/extensions/).
-
-## Installation (CLI, Zip)
-
-Sysadmins and developers may download the `.zip` file for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv).
-
-```bash
-cd <extension-dir>
-cv dl osmf-verify-contributor@https://github.com/FIXME/osmf-verify-contributor/archive/master.zip
-```
+* CiviCRM 5.39.0
 
 ## Installation (CLI, Git)
 
-Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) repo for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv).
-
 ```bash
-git clone https://github.com/FIXME/osmf-verify-contributor.git
-cv en osmf_verify_contributor
+git clone https://github.com/lemniscus/osmf-verify-contributor.git
+cv en oauth_client osmf_verify_contributor
 ```
 
-## Getting Started
+## What the Extension Does
 
-(* FIXME: Where would a new user navigate to get started? What changes would they see? *)
+**It lets you create a link to start the OAuth process.** People sign up for 
+memberships using Contribution Pages, even if no monetary contribution is
+involved. A Contribution Page has a "thank-you page" which the user sees after
+completing a membership "payment". This extension lets you create a special link on
+the "thank-you page" to initiate OAuth authentication.
 
-## Known Issues
+**It lets you simplify the "thank-you page".** Normally, the "thank-you page"
+at the end of the membership "payment" process will show details of the "payment" ,
+even if it was nothing. This extension lets you configure a Contribution Page
+so that its "thank-you page" only shows a message of your choice,
+which may include the OAuth link mentioned above.
 
-(* FIXME *)
+**It sets the status of fee-waiver memberships to "pending" when they are
+first created.** This extension overrides CiviCRM's behaviour when creating
+memberships. If the membership being created is of the "Fee-waiver member" type,
+it will not have a "current" status, but instead will have the status "pending".
+
+**It checks whether the user has meets the criteria for fee-waiver membership,
+and activates the membership if they do.** When a person completes the OAuth 
+process, demonstrating that they own an openstreetmap.org account, this 
+extension checks whether that account has enough mapping days in the past year
+to qualify the person for a fee-waiver membership. If so, their membership 
+status is set to "current".
+
+**It provides a message to the user telling them whether the membership sign-up
+succeeded.** The messages are currently hard-coded.
+
+## Configuration
+
+### OAuth Client
+
+This extension makes **openstreetmap.org** available as an OAuth "Provider". 
+You must create and register an OAuth "client" using this provider on the 
+membership website (join.osmfoundation.org).
+
+1. In CiviCRM, go to Administer > System Settings > OAuth.
+2. In the list of providers, click on OpenStreetMap.
+3. Follow the instructions on the screen.
+
+### "Verify your eligibility" link
+
+  1. In CiviCRM, go to Contributions > Manage Contribution Pages.
+  2. Find the Contribution Page which you want to configure, click on the 
+"Configure" menu for that page, and choose "Thank-you and receipting".
+  3. Now, in the "Receipt" tab, edit the "Thank-you Message" field. Insert 
+a link somewhere in the field, and set the URL of the link to
+`{oauth.authCodeUrl}`.<br />
+![inserting the link](images/contribution-page-configure-link.png)
+  4. Click the Save button.
+  5. Optionally, simplify the Thank-you Page:
+     1. Switch to the "OSMF Overrides" tab.
+     2. Check the checkbox. This only applies to the Contribution Page that
+     you're currently configuring.
+     3. Click the Save button. 
+     
+### Custom fields
+
+This extension expects you to have created two custom fields which it will use.
+Both custom fields should be in the built-in "Constituent Information" field set.
+
+Go to Administer > Customize Data and Screens > Custom Fields. Create the two
+fields.
+
+- Verified OpenStreetMap User ID
+- Verified OpenStreetMap Username
+
+Both should be Alphanumeric text, database field length 255. Their names should
+be entered exactly as shown above, so that their machine names will be 
+`constituent_information.Verified_OpenStreetMap_User_ID` and 
+`constituent_information.Verified_OpenStreetMap_Username`, respectively.
+(Machine names are viewable in the API Explorer and Search Kit, if you need
+to check). After they are saved the first time, you can change their labels to
+something else if you want.
+
