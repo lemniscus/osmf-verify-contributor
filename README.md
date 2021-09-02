@@ -59,6 +59,11 @@ membership website (join.osmfoundation.org).
 1. In CiviCRM, go to Administer > System Settings > OAuth.
 2. In the list of providers, click on OpenStreetMap.
 3. Follow the instructions on the screen.
+   1. Follow instructions on the OpenStreetMap Wiki under ["OAuth 2.0: Registering
+   your application as OAuth 2.0 consumer"](https://wiki.openstreetmap.org/wiki/OAuth#Registering_your_application_as_OAuth_2.0_consumer).
+   The CiviCRM screen tells you the Redirect URI to paste into the registration
+   form on openstreetmap.org.
+   2. Copy the Client ID and Client Secret into the form in CiviCRM.
 
 ### "Verify your eligibility" link
 
