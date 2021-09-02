@@ -13,9 +13,9 @@ class OAuth {
       'title' => 'OpenStreetMap',
       'class' => 'Civi\OAuth\Provider\OpenStreetMapProvider',
       'options' => [
-        'urlAuthorize' => 'https://oauth2.apis.dev.openstreetmap.org/oauth2/authorize',
-        'urlAccessToken' => 'https://oauth2.apis.dev.openstreetmap.org/oauth2/token',
-        'urlResourceOwnerDetails' => 'https://oauth2.apis.dev.openstreetmap.org/api/0.6/user/details.json',
+        'urlAuthorize' => 'https://www.openstreetmap.org/oauth2/authorize',
+        'urlAccessToken' => 'https://www.openstreetmap.org/oauth2/token',
+        'urlResourceOwnerDetails' => 'https://www.openstreetmap.org/api/0.6/user/details.json',
         'scopes' => ['read_prefs'],
       ],
     ];
