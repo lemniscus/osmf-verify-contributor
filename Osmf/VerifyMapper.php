@@ -19,6 +19,8 @@ class VerifyMapper {
   }
 
   public static function verifyAndUpdateMembership(ContactToken $token) {
+    \CRM_Core_Session::singleton()->set('error_message', '', 'osmfvc');
+
     if (!self::checkOsmNameAndIdAreUniqueAndSaveThem($token)) {
       return;
     }
