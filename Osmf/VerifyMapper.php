@@ -161,6 +161,8 @@ class VerifyMapper {
 
     $membership['status_id'] = $calcStatus['id'];
 
+    \Osmf\Membership::$overrideStatus['byContactId'] = NULL;
+    \Osmf\Membership::$overrideStatus['byMembershipId'] = NULL;
     civicrm_api3('Membership', 'create', $membership);
   }
 

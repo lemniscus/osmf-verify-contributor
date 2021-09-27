@@ -240,7 +240,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     }
   }
 
-  public function testPassVerificationAndActivate() {
+  public function testPassVerificationAndActivateNew() {
     $contributionPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
 
     try {
@@ -298,6 +298,111 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     }
   }
 
+  public function testPassVerificationAndActivateRenewal() {
+    $contributionPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
+
+    $statuses = civicrm_api3('Membership', 'getoptions', [
+      'field' => "status_id",
+    ])['values'];
+
+    // ORIGINAL SIGN-UP
+
+    try {
+      $this->submitContributionPage($contributionPage);
+      self::fail('We should not reach this line');
+    }
+    catch (CRM_Core_Exception_PrematureExitException $e) {
+      // Contribution page has been processed
+      \Osmf\Membership::$overrideStatus['byContactId'] = NULL;
+      $email = \Civi\Api4\Email::get(FALSE)
+        ->addWhere('email', '=', 'baz@biff.net')
+        ->execute()->last();
+      $contactId = $email['contact_id'];
+      $membership = civicrm_api3('Membership', 'getsingle', [
+        'contact_id' => $contactId,
+      ]);
+
+      $date = new \DateTime('-350 Days');
+      $dateStr = $date->format('Y-m-d H:i:s');
+      $membership['start_date'] = $membership['join_date'] = $dateStr;
+
+      $date = new \DateTime('+14 Days');
+      $dateStr = $date->format('Y-m-d H:i:s');
+      $membership['end_date'] = $dateStr;
+
+      $membership['status_id'] = 'Current';
+      $membership['is_override'] = FALSE;
+
+      civicrm_api3('Membership', 'create', $membership);
+
+      $membership = civicrm_api3('Membership', 'getsingle', [
+        'contact_id' => $contactId,
+      ]);
+
+      self::assertEquals('Current', $statuses[$membership['status_id']]);
+
+      // RENEWAL
+
+      try {
+        $this->submitContributionPage($contributionPage);
+        self::fail('We should not reach this line');
+      }
+      catch (CRM_Core_Exception_PrematureExitException $e) {
+        // Contribution page has been processed
+        \Osmf\Membership::$overrideStatus['byContactId'] = NULL;
+        \Osmf\Membership::$overrideStatus['byMembershipId'] = NULL;
+        $membership = civicrm_api3('Membership', 'getsingle', [
+          'contact_id' => $contactId,
+        ]);
+
+        self::assertEquals('Pending', $statuses[$membership['status_id']]);
+
+        $osmName = 'foobar';
+        $osmId = '99';
+
+        \Civi\Api4\Contact::update(FALSE)
+          ->addWhere('id', '=', $contactId)
+          ->addValue('constituent_information.Verified_OpenStreetMap_Username', $osmName)
+          ->addValue('constituent_information.Verified_OpenStreetMap_User_ID', $osmId)
+          ->execute();
+
+        Civi::$statics['osmf-verify-contributor']['http-client'] =
+          $this->makeDummyHttpClientThatGets111DaysOfOsmChangeSets();
+
+        Civi\Api4\OAuthContactToken::create(FALSE)
+          ->setValues([
+            "tag" => "linkContact:$contactId",
+            "client_id" => $this->makeOsmOAuthClient()['id'],
+            "contact_id" => $contactId,
+            "grant_type" => "authorization_code",
+            "scopes" => [
+              "read_prefs",
+            ],
+            "token_type" => "Bearer",
+            "access_token" => "example-access-token",
+            "resource_owner_name" => $osmName,
+            "resource_owner" => [
+              'id' => $osmId,
+            ],
+          ])->execute();
+
+        $membership = civicrm_api3('Membership', 'getsingle', [
+          'contact_id' => $contactId,
+        ]);
+        $note = \Civi\Api4\Note::get(FALSE)
+          ->addWhere('entity_table', '=', 'civicrm_contact')
+          ->addWhere('entity_id', '=', $contactId)
+          ->execute()->last();
+
+        self::assertEquals('Current', $statuses[$membership['status_id']]);
+        self::assertEquals('Current', CRM_Core_Session::singleton()
+          ->get('membership_status', 'osmfvc'));
+        self::assertStringContainsString(' 111', $note['subject']);
+        self::assertStringContainsString(' 111 ', $note['note']);
+      }
+    }
+  }
+  
   public function testFailVerification() {
     $contributionPage = \Osmf\Fixture\MembershipSignUp::makeCompleteMembershipSignupPage();
 
