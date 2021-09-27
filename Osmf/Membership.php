@@ -32,7 +32,7 @@ class Membership {
         'status_id', 'Pending');
       $params['is_override'] = TRUE;
       $params['start_date'] = $params['end_date'] = NULL;
-      $targetContactId = $params['contact_id'];
+      $targetContactId = ($op === 'create') ? $params['contact_id'] : NULL;
     }
   }
 

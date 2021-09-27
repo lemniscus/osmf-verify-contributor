@@ -177,10 +177,10 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     parse_str(parse_url($expectedUrl, PHP_URL_QUERY), $query);
 
     self::assertStringStartsWith(
-      'https://oauth2.apis.dev.openstreetmap.org/oauth2/authorize?',
+      'https://www.openstreetmap.org/oauth2/authorize?',
       $evaluatedToken
     );
-    self::assertContains($oauthClient['guid'], $evaluatedToken);
+    self::assertStringContainsString($oauthClient['guid'], $evaluatedToken);
     self::assertEquals(
       preg_replace('/state=[^&]+/', '', $expectedUrl),
       preg_replace('/state=[^&]+/', '', $evaluatedToken));
@@ -194,7 +194,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       self::fail('We should not reach this line');
     }
     catch (CRM_Core_Exception_PrematureExitException $e) {
-      self::assertContains('_qf_ThankYou_display', $e->errorData['url']);
+      self::assertStringContainsString('_qf_ThankYou_display', $e->errorData['url']);
       $email = \Civi\Api4\Email::get(FALSE)
         ->addWhere('email', '=', 'baz@biff.net')
         ->execute()->last();
@@ -293,8 +293,8 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       self::assertEquals('New', $statuses[$membership['status_id']]);
       self::assertEquals('New', CRM_Core_Session::singleton()
         ->get('membership_status', 'osmfvc'));
-      self::assertContains(' 111', $note['subject']);
-      self::assertContains(' 111 ', $note['note']);
+      self::assertStringContainsString(' 111', $note['subject']);
+      self::assertStringContainsString(' 111 ', $note['note']);
     }
   }
 
@@ -351,8 +351,8 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       self::assertEquals('Pending', $statuses[$membership['status_id']]);
       self::assertEquals('Pending', CRM_Core_Session::singleton()
         ->get('membership_status', 'osmfvc'));
-      self::assertContains(' 39', $note['subject']);
-      self::assertContains(' 39 ', $note['note']);
+      self::assertStringContainsString(' 39', $note['subject']);
+      self::assertStringContainsString(' 39 ', $note['note']);
     }
   }
 
