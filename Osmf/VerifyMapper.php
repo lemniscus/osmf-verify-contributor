@@ -109,12 +109,13 @@ class VerifyMapper {
     return count($mappingDays);
   }
 
-  private static function someoneAlreadyHasOsmId($osmId, string $name): bool {
+  private static function anotherContactHasOsmId($osmId, string $name, int $contactId): bool {
     $duplicates = \Civi\Api4\Contact::get(FALSE)
       ->addWhere(
         'constituent_information.Verified_OpenStreetMap_User_ID',
         '=',
         $osmId)
+      ->addWhere('id', '!=', $contactId)
       ->selectRowCount()->execute()->rowCount;
 
     if ($duplicates) {
@@ -181,9 +182,9 @@ class VerifyMapper {
 
   private static function checkOsmNameAndIdAreUniqueAndSaveThem(ContactToken $token): bool {
     $name = $token->resource_owner_name ?? NULL;
-    \CRM_Core_Session::singleton()->set('osm_username', $name, 'osmfvc');
-
     $osmId = json_decode($token->resource_owner ?? '')->id ?? NULL;
+
+    \CRM_Core_Session::singleton()->set('osm_username', $name, 'osmfvc');
 
     if (empty($name) || empty($osmId)) {
       \Civi::log()
@@ -191,7 +192,7 @@ class VerifyMapper {
       return FALSE;
     }
 
-    if (self::someoneAlreadyHasOsmId($osmId, $name)) {
+    if (self::anotherContactHasOsmId($osmId, $name, $token->contact_id)) {
       return FALSE;
     }
 
