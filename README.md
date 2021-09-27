@@ -36,14 +36,26 @@ which may include the OAuth link mentioned above.
 **It sets the status of fee-waiver memberships to "pending" when they are
 first created.** This extension overrides CiviCRM's behaviour when creating
 memberships. If the membership being created is of the "Fee-waiver member" type,
-it will not have a "current" status, but instead will have the status "pending".
+it will not be active initially, but instead will have the status "pending".
 
-**It checks whether the user has meets the criteria for fee-waiver membership,
-and activates the membership if they do.** When a person completes the OAuth 
-process, demonstrating that they own an openstreetmap.org account, this 
+**It saves the user's verified OSM username and ID to their record in Civi.**
+When a person completes the OAuth process, demonstrating that they own an 
+openstreetmap.org account, this extension saves their OSM user ID and username
+to custom fields on their Civi contact record.
+
+**It checks whether the user meets the criteria for fee-waiver membership,
+and activates the membership if they do.** After a person demonstrates that 
+they own an openstreetmap.org account (using the OAuth process), this 
 extension checks whether that account has enough mapping days in the past year
-to qualify the person for a fee-waiver membership. If so, their membership 
-status is set to "current".
+to qualify the person for a fee-waiver membership. If so, the extension sets
+the status of the most recently created fee-waiver membership on the person's 
+record to "new" or "current" as appropriate.
+
+**It overrides the renewal process in a similar way.** When a person uses a 
+contribution page to apply for membership renewal, this extension sets the status
+of their existing membership to "pending". If they complete the OAuth process
+and have enough mapping days to qualify, their membership will be reactivated 
+and the renewal will be completed.
 
 **It provides a message to the user telling them whether the membership sign-up
 succeeded.** The messages are currently hard-coded.
@@ -59,7 +71,7 @@ membership website (join.osmfoundation.org).
 1. In CiviCRM, go to Administer > System Settings > OAuth.
 2. In the list of providers, click on OpenStreetMap.
 3. Follow the instructions on the screen.
-   1. Copy the "Redirect URI" given in the instructions.
+   1. Copy the "Redirect URI" given in the instructions. It will be used in the next step.
    2. Follow instructions on the OpenStreetMap Wiki under ["OAuth 2.0: Registering
    your application as OAuth 2.0 consumer"](https://wiki.openstreetmap.org/wiki/OAuth#Registering_your_application_as_OAuth_2.0_consumer).
    Paste this redirect URI into the registration form on openstreetmap.org:
