@@ -17,12 +17,11 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     HookInterface,
     TransactionalInterface {
 
-  /**
-   * @var array
-   */
   private $originalRequest;
 
   private $originalPost;
+
+  private $createdEntities = [];
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
@@ -45,8 +44,17 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
 
   public function tearDown(): void {
     parent::tearDown();
+
     $_REQUEST = $this->originalRequest;
     $_POST = $this->originalPost;
+
+    foreach ($this->createdEntities as $type => $ids) {
+      foreach ($ids as $id) {
+        civicrm_api3($type, 'Delete', ['id' => $id]);
+      }
+    }
+
+    \Osmf\Membership::weAreDoneProcessingAContributionPageSubmission();
   }
 
   private function makeOsmOAuthClient(): array {
@@ -195,23 +203,19 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     }
     catch (CRM_Core_Exception_PrematureExitException $e) {
       self::assertStringContainsString('_qf_ThankYou_display', $e->errorData['url']);
-      $email = \Civi\Api4\Email::get(FALSE)
-        ->addWhere('email', '=', 'baz@biff.net')
-        ->execute()->last();
-      $membership = civicrm_api3('Membership', 'getsingle', [
-        'contact_id' => $email['contact_id'],
-      ]);
+
+      $membership = $this->getMembershipByEmail('baz@biff.net');
+      $this->createdEntities['Membership'][] = $membership['id'];
       self::assertNull($membership['start_date'] ?? NULL);
       self::assertNull($membership['end_date'] ?? NULL);
+
       $membershipType = \Civi\Api4\MembershipType::get(FALSE)
         ->addWhere('id', '=', $membership['membership_type_id'])
         ->execute()->single();
+
       self::assertEquals('Fee-waiver Member', $membershipType['name']);
-      $pendingStatusId = CRM_Core_Pseudoconstant::getKey(
-        'CRM_Member_BAO_Membership',
-        'status_id',
-        'Pending');
-      self::assertEquals($pendingStatusId, $membership['status_id']);
+
+      self::assertEquals($this->getPendingStatusId(), $membership['status_id']);
     }
   }
 
@@ -223,20 +227,20 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       self::fail('We should not reach this line');
     }
     catch (CRM_Core_Exception_PrematureExitException $e) {
-      // Membership has been created. Now, auto-update membership statuses
+      // Membership has been created.
+
+      $membership = $this->getMembershipByEmail('baz@biff.net');
+      $this->createdEntities['Membership'][] = $membership['id'];
+      self::assertEquals('Pending', $this->getStatusName($membership));
+
+      // Now, auto-update membership statuses
+
       civicrm_api3('Job', 'process_membership');
 
-      $email = \Civi\Api4\Email::get(FALSE)
-        ->addWhere('email', '=', 'baz@biff.net')
-        ->execute()->last();
-      $pendingStatusId = CRM_Core_Pseudoconstant::getKey(
-        'CRM_Member_BAO_Membership',
-        'status_id',
-        'Pending');
       $membership = civicrm_api3('Membership', 'getsingle', [
-        'contact_id' => $email['contact_id'],
+        'id' => $membership['id'],
       ]);
-      self::assertEquals($pendingStatusId, $membership['status_id']);
+      self::assertEquals($this->getPendingStatusId(), $membership['status_id']);
     }
   }
 
@@ -249,18 +253,13 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     }
     catch (CRM_Core_Exception_PrematureExitException $e) {
       // Membership has been created
-      $email = \Civi\Api4\Email::get(FALSE)
-        ->addWhere('email', '=', 'baz@biff.net')
-        ->execute()->last();
-      $contactId = $email['contact_id'];
-      $membership = civicrm_api3('Membership', 'getsingle', [
-        'contact_id' => $contactId,
-      ]);
-      $statuses = civicrm_api3('Membership', 'getoptions', [
-        'field' => "status_id",
-      ])['values'];
 
-      self::assertEquals('Pending', $statuses[$membership['status_id']]);
+      $membership = $this->getMembershipByEmail('baz@biff.net');
+      $this->createdEntities['Membership'][] = $membership['id'];
+      $contactId = $membership['contact_id'];
+
+      $statusName = $this->getStatusName($membership);
+      self::assertEquals('Pending', $statusName);
 
       Civi::$statics['osmf-verify-contributor']['http-client'] =
         $this->makeDummyHttpClientThatGets111DaysOfOsmChangeSets();
@@ -290,7 +289,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
         ->addWhere('entity_id', '=', $contactId)
         ->execute()->last();
 
-      self::assertEquals('New', $statuses[$membership['status_id']]);
+      self::assertEquals('New', $this->getStatusName($membership));
       self::assertEquals('New', CRM_Core_Session::singleton()
         ->get('membership_status', 'osmfvc'));
       self::assertStringContainsString(' 111', $note['subject']);
@@ -313,22 +312,19 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     }
     catch (CRM_Core_Exception_PrematureExitException $e) {
       // Contribution page has been processed
-      \Osmf\Membership::$overrideStatus['byContactId'] = NULL;
-      $email = \Civi\Api4\Email::get(FALSE)
-        ->addWhere('email', '=', 'baz@biff.net')
-        ->execute()->last();
-      $contactId = $email['contact_id'];
-      $membership = civicrm_api3('Membership', 'getsingle', [
-        'contact_id' => $contactId,
-      ]);
+      \Osmf\Membership::weAreDoneProcessingAContributionPageSubmission();
+
+      $membership = $this->getMembershipByEmail('baz@biff.net');
+      $this->createdEntities['Membership'][] = $membership['id'];
+      $contactId = $membership['contact_id'];
 
       $date = new \DateTime('-350 Days');
-      $dateStr = $date->format('Y-m-d H:i:s');
-      $membership['start_date'] = $membership['join_date'] = $dateStr;
+      $startDateBeforeRenew = $date->format('Y-m-d');
+      $membership['start_date'] = $membership['join_date'] = $startDateBeforeRenew;
 
       $date = new \DateTime('+14 Days');
-      $dateStr = $date->format('Y-m-d H:i:s');
-      $membership['end_date'] = $dateStr;
+      $endDateBeforeRenew = $date->format('Y-m-d');
+      $membership['end_date'] = $endDateBeforeRenew;
 
       $membership['status_id'] = 'Current';
       $membership['is_override'] = FALSE;
@@ -336,7 +332,7 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       civicrm_api3('Membership', 'create', $membership);
 
       $membership = civicrm_api3('Membership', 'getsingle', [
-        'contact_id' => $contactId,
+        'id' => $membership['id'],
       ]);
 
       self::assertEquals('Current', $statuses[$membership['status_id']]);
@@ -349,13 +345,16 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       }
       catch (CRM_Core_Exception_PrematureExitException $e) {
         // Contribution page has been processed
-        \Osmf\Membership::$overrideStatus['byContactId'] = NULL;
-        \Osmf\Membership::$overrideStatus['byMembershipId'] = NULL;
+
+        \Osmf\Membership::weAreDoneProcessingAContributionPageSubmission();
+
         $membership = civicrm_api3('Membership', 'getsingle', [
-          'contact_id' => $contactId,
+          'id' => $membership['id'],
         ]);
 
         self::assertEquals('Pending', $statuses[$membership['status_id']]);
+        self::assertEquals($startDateBeforeRenew, $membership['start_date']);
+        self::assertEquals($endDateBeforeRenew, $membership['end_date']);
 
         $osmName = 'foobar';
         $osmId = '99';
@@ -386,6 +385,9 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
             ],
           ])->execute();
 
+        $date = new \DateTime('+364 Days');
+        $expectedEndDate = $date->format('Y-m-d');
+
         $membership = civicrm_api3('Membership', 'getsingle', [
           'contact_id' => $contactId,
         ]);
@@ -395,6 +397,8 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
           ->execute()->last();
 
         self::assertEquals('Current', $statuses[$membership['status_id']]);
+        self::assertEquals($expectedEndDate, $membership['end_date']);
+        self::assertEquals($startDateBeforeRenew, $membership['start_date']);
         self::assertEquals('Current', CRM_Core_Session::singleton()
           ->get('membership_status', 'osmfvc'));
         self::assertStringContainsString(' 111', $note['subject']);
@@ -412,13 +416,11 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
     }
     catch (CRM_Core_Exception_PrematureExitException $e) {
       // Membership has been created
-      $email = \Civi\Api4\Email::get(FALSE)
-        ->addWhere('email', '=', 'baz@biff.net')
-        ->execute()->last();
-      $contactId = $email['contact_id'];
-      $membership = civicrm_api3('Membership', 'getsingle', [
-        'contact_id' => $contactId,
-      ]);
+
+      $membership = $this->getMembershipByEmail('baz@biff.net');
+      $this->createdEntities['Membership'][] = $membership['id'];
+      $contactId = $membership['contact_id'];
+
       $statuses = civicrm_api3('Membership', 'getoptions', [
         'field' => "status_id",
       ])['values'];
@@ -459,6 +461,33 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       self::assertStringContainsString(' 39', $note['subject']);
       self::assertStringContainsString(' 39 ', $note['note']);
     }
+  }
+
+  private function getMembershipByEmail($address): array {
+    $email = \Civi\Api4\Email::get(FALSE)
+      ->addWhere('email', '=', $address)
+      ->execute()->last();
+
+    $membership = civicrm_api3('Membership', 'getsingle', [
+      'contact_id' => $email['contact_id'],
+    ]);
+    return $membership;
+  }
+
+  private function getPendingStatusId() {
+    $pendingStatusId = CRM_Core_Pseudoconstant::getKey(
+      'CRM_Member_BAO_Membership',
+      'status_id',
+      'Pending');
+    return $pendingStatusId;
+  }
+
+  private function getStatusName($membership) {
+    $statuses = civicrm_api3('Membership', 'getoptions', [
+      'field' => "status_id",
+    ])['values'];
+
+    return $statuses[$membership['status_id']];
   }
 
 }

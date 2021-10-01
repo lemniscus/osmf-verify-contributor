@@ -139,18 +139,20 @@ class VerifyMapper {
 
     $calcDates = \CRM_Member_BAO_MembershipType::getDatesForMembershipType(
       $membership['membership_type_id'],
-      $membership['join_date'] ?? NULL,
-      $membership['start_date'] ?? NULL,
-      $membership['end_date'] ?? NULL,
+      NULL,
+      NULL,
+      NULL,
       1
     );
 
-    $membership = array_merge($calcDates, $membership);
+    $membership['join_date'] = $membership['join_date'] ?? $calcDates['join_date'];
+    $membership['start_date'] = $membership['start_date'] ?? $calcDates['start_date'];
+    $membership['end_date'] = $calcDates['end_date'];
 
     $calcStatus = \CRM_Member_BAO_MembershipStatus::getMembershipStatusByDate(
-      $calcDates['start_date'],
-      $calcDates['end_date'],
-      $calcDates['join_date'],
+      $membership['start_date'],
+      $membership['end_date'],
+      $membership['join_date'],
       'now',
       FALSE,
       $membership['membership_type_id'],
@@ -163,8 +165,7 @@ class VerifyMapper {
 
     $membership['status_id'] = $calcStatus['id'];
 
-    \Osmf\Membership::$overrideStatus['byContactId'] = NULL;
-    \Osmf\Membership::$overrideStatus['byMembershipId'] = NULL;
+    \Osmf\Membership::weAreDoneProcessingAContributionPageSubmission();
     civicrm_api3('Membership', 'create', $membership);
   }
 

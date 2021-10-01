@@ -1,13 +1,11 @@
 <?php
 
-
 namespace Osmf;
-
-use Civi\Core\Event\GenericHookEvent;
 
 class Membership {
 
-  public static $overrideStatus = ['byContactId' => NULL, 'byMembershipId' => NULL];
+  private static $submittedFormVals = ['contactId' => NULL, 'membershipId' => NULL];
+  private static $membershipIsNewlyCreated = NULL;
 
   public static function pre($op, $objectName, $id, &$params) {
     if ($objectName !== 'Membership' || empty($params['membership_type_id'])) {
@@ -24,26 +22,53 @@ class Membership {
     }
 
     $contributionPageId = $params['contribution']->contribution_page_id ?? NULL;
-    $membershipId = $params['id'] ?? -1;
-    $contactId = $params['contact_id'] ?? -1;
-    $paramsOriginatedOnContributionPage = ($membershipId === self::$overrideStatus['byMembershipId'])
-                                          || ($contactId === self::$overrideStatus['byContactId']);
+    $membershipId = $params['id'] ?? NULL;
+    $contactId = $params['contact_id'] ?? NULL;
 
-    if (!empty($contributionPageId)) {
-      self::makePending($params);
-      self::$overrideStatus['byMembershipId'] = $membershipId;
-      self::$overrideStatus['byContactId'] = $contactId;
-    }
-    if ($op === 'edit' && $paramsOriginatedOnContributionPage) {
-      self::makePending($params);
+    if (self::weAreProcessingAContributionPageSubmission(
+      $contributionPageId, $membershipId, $contactId)) {
+
+      $params['status_id'] = \CRM_Core_PseudoConstant::getKey(
+        'CRM_Member_BAO_Membership',
+        'status_id',
+        'Pending');
+
+      $params['is_override'] = TRUE;
+
+      if (is_null(self::$membershipIsNewlyCreated) && $op === 'create') {
+        self::$membershipIsNewlyCreated = TRUE;
+      }
+      if (self::$membershipIsNewlyCreated) {
+        $params['start_date'] = $params['end_date'] = 'null';
+      }
+
+      self::rememberThatWeAreProcessingAContributionPageSubmission(
+        $membershipId, $contactId);
     }
   }
 
-  private static function makePending(&$params): void {
-    $params['status_id'] = \CRM_Core_Pseudoconstant::getKey('CRM_Member_BAO_Membership',
-      'status_id', 'Pending');
-    $params['is_override'] = TRUE;
-    $params['start_date'] = $params['end_date'] = NULL;
+  private static function weAreProcessingAContributionPageSubmission(
+    $contributionPageId,
+    $membershipId,
+    $contactId): bool {
+    return !empty($contributionPageId)
+    || (!empty($membershipId) && $membershipId === self::$submittedFormVals['membershipId'])
+    || (!empty($contactId) && $contactId === self::$submittedFormVals['contactId']);
+  }
+
+  private static function rememberThatWeAreProcessingAContributionPageSubmission(
+    $membershipId,
+    $contactId): void {
+    self::$submittedFormVals['membershipId']
+      = self::$submittedFormVals['membershipId'] ?? $membershipId;
+    self::$submittedFormVals['contactId']
+      = self::$submittedFormVals['contactId'] ?? $contactId;
+  }
+
+  public static function weAreDoneProcessingAContributionPageSubmission(): void {
+    self::$submittedFormVals['membershipId'] = NULL;
+    self::$submittedFormVals['contactId'] = NULL;
+    self::$membershipIsNewlyCreated = NULL;
   }
 
   public static function post($op, $objectName, $objectId, &$objectRef) {
