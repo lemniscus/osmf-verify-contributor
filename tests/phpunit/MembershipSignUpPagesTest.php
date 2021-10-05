@@ -318,11 +318,11 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
       $this->createdEntities['Membership'][] = $membership['id'];
       $contactId = $membership['contact_id'];
 
-      $date = new \DateTime('-350 Days');
+      $date = new \DateTime('-360 Days');
       $startDateBeforeRenew = $date->format('Y-m-d');
       $membership['start_date'] = $membership['join_date'] = $startDateBeforeRenew;
 
-      $date = new \DateTime('+14 Days');
+      $date = new \DateTime('+4 Days');
       $endDateBeforeRenew = $date->format('Y-m-d');
       $membership['end_date'] = $endDateBeforeRenew;
 
@@ -385,7 +385,8 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
             ],
           ])->execute();
 
-        $date = new \DateTime('+364 Days');
+        $date = new DateTime($endDateBeforeRenew);
+        $date->add(new DateInterval('P1Y'));
         $expectedEndDate = $date->format('Y-m-d');
 
         $membership = civicrm_api3('Membership', 'getsingle', [

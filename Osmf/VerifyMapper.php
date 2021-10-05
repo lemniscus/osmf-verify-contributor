@@ -135,19 +135,11 @@ class VerifyMapper {
   }
 
   private static function activateMembership($membership): void {
+    \Osmf\Membership::weAreDoneProcessingAContributionPageSubmission();
+
     $membership['is_override'] = FALSE;
 
-    $calcDates = \CRM_Member_BAO_MembershipType::getDatesForMembershipType(
-      $membership['membership_type_id'],
-      NULL,
-      NULL,
-      NULL,
-      1
-    );
-
-    $membership['join_date'] = $membership['join_date'] ?? $calcDates['join_date'];
-    $membership['start_date'] = $membership['start_date'] ?? $calcDates['start_date'];
-    $membership['end_date'] = $calcDates['end_date'];
+    $membership = self::calculateDates($membership);
 
     $calcStatus = \CRM_Member_BAO_MembershipStatus::getMembershipStatusByDate(
       $membership['start_date'],
@@ -160,12 +152,11 @@ class VerifyMapper {
     );
 
     if (empty($calcStatus)) {
-      throw new \CRM_Core_Exception(ts("The membership cannot be saved because the status cannot be calculated for start_date: {$calcDates['start_date']} end_date {$calcDates['end_date']} join_date {$calcDates['join_date']} as at " . CRM_Utils_Time::date('Y-m-d H:i:s')));
+      throw new \CRM_Core_Exception(ts("The membership cannot be saved because the status cannot be calculated for start_date: {$membership['start_date']} end_date {$membership['end_date']} join_date {$membership['join_date']} as at " . CRM_Utils_Time::date('Y-m-d H:i:s')));
     }
 
     $membership['status_id'] = $calcStatus['id'];
 
-    \Osmf\Membership::weAreDoneProcessingAContributionPageSubmission();
     civicrm_api3('Membership', 'create', $membership);
   }
 
@@ -208,6 +199,31 @@ class VerifyMapper {
       ->execute();
 
     return TRUE;
+  }
+
+  private static function calculateDates($membership) {
+    if (empty($membership['start_date'])) {
+      $calcDates = \CRM_Member_BAO_MembershipType::getDatesForMembershipType(
+        $membership['membership_type_id'],
+        NULL,
+        NULL,
+        NULL,
+        1
+      );
+    }
+    else {
+      $membership['status_id'] = 'Current';
+      civicrm_api3('Membership', 'create', $membership);
+      $calcDates = \CRM_Member_BAO_MembershipType::getRenewalDatesForMembershipType(
+        $membership['id']
+      );
+    }
+
+    $membership['join_date'] = $membership['join_date'] ?? $calcDates['join_date'];
+    $membership['start_date'] = $membership['start_date'] ?? $calcDates['start_date'];
+    $membership['end_date'] = $calcDates['end_date'];
+
+    return $membership;
   }
 
 }
