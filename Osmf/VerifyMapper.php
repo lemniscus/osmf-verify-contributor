@@ -114,7 +114,7 @@ class VerifyMapper {
   private static function anotherContactHasOsmId($osmId, string $name, int $contactId): bool {
     $duplicates = \Civi\Api4\Contact::get(FALSE)
       ->addWhere(
-        'constituent_information.Verified_OpenStreetMap_User_ID',
+        'OpenStreetMap_user_info.Verified_OpenStreetMap_User_ID',
         '=',
         $osmId)
       ->addWhere('id', '!=', $contactId)
@@ -194,8 +194,8 @@ class VerifyMapper {
 
     \Civi\Api4\Contact::update(FALSE)
       ->addWhere('id', '=', $token->contact_id)
-      ->addValue('constituent_information.Verified_OpenStreetMap_Username', $name)
-      ->addValue('constituent_information.Verified_OpenStreetMap_User_ID', $osmId)
+      ->addValue('OpenStreetMap_user_info.Verified_OpenStreetMap_Username', $name)
+      ->addValue('OpenStreetMap_user_info.Verified_OpenStreetMap_User_ID', $osmId)
       ->execute();
 
     return TRUE;

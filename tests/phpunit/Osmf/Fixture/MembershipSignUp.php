@@ -9,7 +9,7 @@ class MembershipSignUp {
 
   public static function setUpCustomFields(): void {
     \Civi\Api4\CustomGroup::delete(FALSE)
-      ->addWhere('name', '=', 'constituent_information')
+      ->addWhere('name', '=', 'OpenStreetMap_user_info')
       ->execute();
     \Civi\Api4\CustomField::delete(FALSE)
       ->addWhere('name', 'IN', [
@@ -19,7 +19,7 @@ class MembershipSignUp {
     $customGroup = \Civi\Api4\CustomGroup::create(FALSE)
       ->setValues(
         [
-          'name' => 'constituent_information',
+          'name' => 'OpenStreetMap_user_info',
           'title' => 'Constituent Information',
           'extends' => 'Individual',
           'style' => 'Inline',
@@ -27,7 +27,7 @@ class MembershipSignUp {
           'help_pre' => 'Please enter additional constituent information as data becomes available for this contact.',
           'weight' => 1,
           'is_active' => TRUE,
-          'table_name' => 'civicrm_value_constituent_information_1',
+          'table_name' => 'civicrm_value_OpenStreetMap_user_info_1',
           'is_multiple' => FALSE,
           'collapse_adv_display' => FALSE,
           'is_reserved' => FALSE,

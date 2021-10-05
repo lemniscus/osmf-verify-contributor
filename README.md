@@ -98,7 +98,7 @@ a link somewhere in the field, and set the URL of the link to
 ### Custom fields
 
 This extension expects you to have created two custom fields which it will use.
-Both custom fields should be in the built-in "Constituent Information" field set.
+Both custom fields should be in the "OpenStreetMap user info" field set.
 
 Go to Administer > Customize Data and Screens > Custom Fields. Create the two
 fields.
@@ -108,8 +108,8 @@ fields.
 
 Both should be Alphanumeric text, database field length 255. Their names should
 be entered exactly as shown above, so that their machine names will be 
-`constituent_information.Verified_OpenStreetMap_User_ID` and 
-`constituent_information.Verified_OpenStreetMap_Username`, respectively.
+`OpenStreetMap_user_info.Verified_OpenStreetMap_User_ID` and 
+`OpenStreetMap_user_info.Verified_OpenStreetMap_Username`, respectively.
 (Machine names are viewable in the API Explorer and Search Kit, if you need
 to check). After they are saved the first time, you can change their labels to
 something else if you want.

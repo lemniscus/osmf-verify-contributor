@@ -361,8 +361,8 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
 
         \Civi\Api4\Contact::update(FALSE)
           ->addWhere('id', '=', $contactId)
-          ->addValue('constituent_information.Verified_OpenStreetMap_Username', $osmName)
-          ->addValue('constituent_information.Verified_OpenStreetMap_User_ID', $osmId)
+          ->addValue('OpenStreetMap_user_info.Verified_OpenStreetMap_Username', $osmName)
+          ->addValue('OpenStreetMap_user_info.Verified_OpenStreetMap_User_ID', $osmId)
           ->execute();
 
         Civi::$statics['osmf-verify-contributor']['http-client'] =
