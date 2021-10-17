@@ -7,17 +7,26 @@ class Membership {
   private static $submittedFormVals = ['contactId' => NULL, 'membershipId' => NULL];
   private static $membershipIsNewlyCreated = NULL;
 
+  public static function isATargetedMembershipType($membership_type_id): bool {
+    $targetedMembershipTypeNames = [
+      'Fee-waiver Member',
+      'Active Contributor Associate Member',
+      'Active Contributor Normal Member',
+    ];
+    $membershipTypeName = \CRM_Core_Pseudoconstant::getName(
+      'CRM_Member_BAO_Membership',
+      'membership_type_id',
+      $membership_type_id
+    );
+    return in_array($membershipTypeName, $targetedMembershipTypeNames);
+  }
+
   public static function pre($op, $objectName, $id, &$params) {
     if ($objectName !== 'Membership' || empty($params['membership_type_id'])) {
       return;
     }
 
-    $membershipType = \CRM_Core_Pseudoconstant::getName(
-      'CRM_Member_BAO_Membership',
-      'membership_type_id',
-      $params['membership_type_id']
-    );
-    if ($membershipType !== 'Fee-waiver Member') {
+    if (!self::isATargetedMembershipType($params['membership_type_id'])) {
       return;
     }
 

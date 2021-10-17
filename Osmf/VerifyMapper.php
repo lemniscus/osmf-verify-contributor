@@ -25,13 +25,19 @@ class VerifyMapper {
       return;
     }
 
-    $memberships = civicrm_api3('Membership', 'get', [
+    $apiGetMembership = civicrm_api3('Membership', 'get', [
       'contact_id' => $token->contact_id,
-      'membership_type_id' => "Fee-waiver Member",
       'status_id' => "Pending",
     ]);
 
-    if ($memberships['count'] == 0) {
+    $memberships = [];
+    foreach ($apiGetMembership['values'] ?? [] as $m) {
+      if (Membership::isATargetedMembershipType($m['membership_type_id'])) {
+        $memberships[] = $m;
+      }
+    }
+
+    if (empty($memberships)) {
       return;
     }
 
@@ -39,7 +45,7 @@ class VerifyMapper {
       $userMappingDays = self::userMappingDays($token);
 
       if ($userMappingDays >= 42) {
-        $membership = array_pop($memberships['values']);
+        $membership = array_pop($memberships);
         self::activateMembership($membership);
       }
 

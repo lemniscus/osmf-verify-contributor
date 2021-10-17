@@ -33,23 +33,24 @@ even if it was nothing. This extension lets you configure a Contribution Page
 so that its "thank-you page" only shows a message of your choice,
 which may include the OAuth link mentioned above.
 
-**It sets the status of fee-waiver memberships to "pending" when they are
+**It sets the status of active contributor memberships to "pending" when they are
 first created.** This extension overrides CiviCRM's behaviour when creating
-memberships. If the membership being created is of the "Fee-waiver member" type,
-it will not be active initially, but instead will have the status "pending".
+memberships. If the membership being created is of the "Fee-waiver member",
+"Active Contributor Associate Member" or "Active Contributor Normal Member"
+type, it will not be active initially, but instead will have the status "pending".
 
 **It saves the user's verified OSM username and ID to their record in Civi.**
 When a person completes the OAuth process, demonstrating that they own an 
 openstreetmap.org account, this extension saves their OSM user ID and username
 to custom fields on their Civi contact record.
 
-**It checks whether the user meets the criteria for fee-waiver membership,
-and activates the membership if they do.** After a person demonstrates that 
-they own an openstreetmap.org account (using the OAuth process), this 
-extension checks whether that account has enough mapping days in the past year
-to qualify the person for a fee-waiver membership. If so, the extension sets
-the status of the most recently created fee-waiver membership on the person's 
-record to "new" or "current" as appropriate.
+**It checks whether the user meets the criteria for an active contributor 
+membership, and activates the membership if they do.** After a person 
+demonstrates that they own an openstreetmap.org account (using the OAuth process),
+this extension checks whether that account has enough mapping days in the past 
+year to qualify the person for an active contributor membership. If so, the 
+extension sets the status of the most recently created active contributor 
+membership on the person's record to "new" or "current" as appropriate.
 
 **It overrides the renewal process in a similar way.** When a person uses a 
 contribution page to apply for membership renewal, this extension sets the status
