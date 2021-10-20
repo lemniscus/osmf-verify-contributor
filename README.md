@@ -63,6 +63,18 @@ succeeded.** The messages are currently hard-coded.
 
 ## Configuration
 
+### OAuth Permissions
+This extension makes it possible for "anonymous" users -- people who aren't
+logged in to your WordPress site -- to complete an OAuth process to verify
+their account on openstreetmap.org. But first you must give them the
+appropriate permission.
+
+1. In the CiviCRM menu, click Administer > Users and Permissions.
+2. Click WordPress Access Control.
+3. Note which column belongs to "Anonymous". Find the row that says "CiviCRM:
+create OAuth tokens via auth code flow". Check the box for "Anonymous" in that
+row. Save the settings.
+
 ### OAuth Client
 
 This extension makes **openstreetmap.org** available as an OAuth "Provider". 
