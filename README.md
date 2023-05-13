@@ -21,6 +21,8 @@ cv en oauth_client osmf_verify_contributor
 
 ## What the Extension Does
 
+![](images/extension-workflow.svg "Flowchart of the extension workflows")
+
 **It lets you create a link to start the OAuth process.** People sign up for 
 memberships using Contribution Pages, even if no monetary contribution is
 involved. A Contribution Page has a "thank-you page" which the user sees after
