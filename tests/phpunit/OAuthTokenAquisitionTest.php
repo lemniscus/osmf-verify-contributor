@@ -6,11 +6,12 @@ use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
 
 /**
- * FIXME - Add test description.
- *
  * @group headless
  */
-class OAuthTokenAquisitionTest extends \PHPUnit\Framework\TestCase implements HeadlessInterface, HookInterface, TransactionalInterface {
+class OAuthTokenAquisitionTest extends \PHPUnit\Framework\TestCase implements
+    HeadlessInterface,
+    HookInterface,
+    TransactionalInterface {
 
   /**
    * @var array
@@ -96,6 +97,7 @@ class OAuthTokenAquisitionTest extends \PHPUnit\Framework\TestCase implements He
         'urlAuthorize' => 'https://dummy/authorize',
         'urlAccessToken' => 'https://dummy/token',
         'urlResourceOwnerDetails' => 'https://dummy/',
+        //'redirectUri' => 'http://custom/redirect-url',
         'scopes' => ['foo'],
         'cannedResponses' => [$newTokenResponse, $userPrefsResponse],
       ],
@@ -119,13 +121,17 @@ class OAuthTokenAquisitionTest extends \PHPUnit\Framework\TestCase implements He
       ]
     )->execute()->single();
 
+    $landingUrl = \Civi::paths()->getUrl('[cms.root]/example_landing_url', 'absolute');
+
     $url = Civi\Api4\OAuthClient::authorizationCode(0)
       ->addWhere('id', '=', $client['id'])
-      ->setLandingUrl('http://localhost/example_landing_url')
+      ->setLandingUrl($landingUrl)
       ->setStorage('OAuthContactToken')
       ->setTag('linkContact:' . $contact['id'])
       ->execute()->single()['url'];
     parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+    //self::assertEquals('http://custom/redirect-url', $query['redirect_uri']);
 
     $_REQUEST['state'] = $query['state'];
     $_REQUEST['code'] = 'example_code';
