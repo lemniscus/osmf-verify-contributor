@@ -26,12 +26,14 @@ class MembershipSignUpPagesTest extends \PHPUnit\Framework\TestCase implements
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
       ->install(['oauth-client', 'osmf-verify-contributor'])
-      ->callback(['\Osmf\Fixture\MembershipSignUp', 'setUpCustomFields'])
       ->apply();
   }
 
   public function setUp(): void {
     parent::setUp();
+
+    \Osmf\Fixture\MembershipSignUp::setUpCustomFields();
+
     $this->originalRequest = $_REQUEST;
     $this->originalPost = $_POST;
 
