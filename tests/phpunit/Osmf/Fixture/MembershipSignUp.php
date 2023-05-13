@@ -178,6 +178,7 @@ class MembershipSignUp {
           "amount_block_is_active" => FALSE,
           "is_share" => FALSE,
           "is_billing_required" => FALSE,
+          "payment_processor" => self::makeDummyProcessor(),
         ]
       )
       ->execute()->single();
@@ -305,6 +306,35 @@ class MembershipSignUp {
       \Civi\Api4\UFField::create(FALSE)->setValues($ps)->execute();
     }
     return $ufGroup;
+  }
+
+  public static function makePaymentProcessor($params = []) {
+    // copied wholesale from CiviUnitTestCase: https://github.com/civicrm/civicrm-core/blob/365efc75a69e0328e1d526efc4d875068c509164/tests/phpunit/CiviTest/CiviUnitTestCase.php#L808
+    $processorParams = [
+      'domain_id' => 1,
+      'name' => 'Dummy',
+      'title' => 'Dummy',
+      'payment_processor_type_id' => 'Dummy',
+      'financial_account_id' => 12,
+      'is_test' => TRUE,
+      'is_active' => 1,
+      'user_name' => '',
+      'url_site' => 'http://dummy.com',
+      'url_recur' => 'http://dummy.com',
+      'billing_mode' => 1,
+      'sequential' => 1,
+      'payment_instrument_id' => 'Debit Card',
+    ];
+    $processorParams = array_merge($processorParams, $params);
+    $processor = civicrm_api3('PaymentProcessor', 'create', $processorParams);
+    return $processor['id'];
+  }
+
+  public static function makeDummyProcessor($processorParams = []) {
+    // adapted from CiviUnitTestCase: https://github.com/civicrm/civicrm-core/blob/365efc75a69e0328e1d526efc4d875068c509164/tests/phpunit/CiviTest/CiviUnitTestCase.php#L839
+    $paymentProcessorID = self::makePaymentProcessor($processorParams);
+    $processorParams['is_test'] = FALSE;
+    return self::makePaymentProcessor($processorParams);
   }
 
 }
